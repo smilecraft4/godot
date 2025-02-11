@@ -88,6 +88,8 @@ public:
 		Vector2 offset;
 		uint32_t visible_layers;
 		bool vaspect;
+		bool use_custom_aspect;
+		float custom_aspect;
 		RID env;
 		RID attributes;
 		RID compositor;
@@ -103,6 +105,8 @@ public:
 			size = 1.0;
 			offset = Vector2();
 			vaspect = false;
+			use_custom_aspect = false;
+			custom_aspect = 16.0f / 9.0f;
 		}
 	};
 
@@ -120,6 +124,8 @@ public:
 	virtual void camera_set_camera_attributes(RID p_camera, RID p_attributes);
 	virtual void camera_set_compositor(RID p_camera, RID p_compositor);
 	virtual void camera_set_use_vertical_aspect(RID p_camera, bool p_enable);
+	virtual void camera_set_use_custom_aspect(RID p_camera, bool p_enable);
+	virtual void camera_set_custom_aspect(RID p_camera, float p_aspect);
 	virtual bool is_camera(RID p_camera) const;
 
 	/* OCCLUDER API */

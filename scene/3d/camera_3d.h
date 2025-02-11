@@ -73,7 +73,11 @@ private:
 	real_t _far = 4000.0;
 	real_t v_offset = 0.0;
 	real_t h_offset = 0.0;
-	KeepAspect keep_aspect = KEEP_HEIGHT;
+	KeepAspect keep_aspect = KEEP_HEIGHT;	
+
+	// Add support for custom aspect ratio
+	bool use_custom_aspect_ratio = false;
+	Vector2 custom_aspect_ratio = Vector2(16.0, 9.0);
 
 	RID camera;
 	RID scenario_id;
@@ -217,6 +221,12 @@ public:
 	DopplerTracking get_doppler_tracking() const;
 
 	Vector3 get_doppler_tracked_velocity() const;
+
+	void set_use_custom_aspect(bool p_enable);
+	bool get_use_custom_aspect() const;
+
+	void set_custom_aspect(Vector2 p_custom_aspect_ratio);
+	Vector2 get_custom_aspect() const;
 
 	RID get_pyramid_shape_rid();
 

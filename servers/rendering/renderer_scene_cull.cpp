@@ -144,6 +144,18 @@ void RendererSceneCull::camera_set_use_vertical_aspect(RID p_camera, bool p_enab
 	camera->vaspect = p_enable;
 }
 
+void RendererSceneCull::camera_set_use_custom_aspect(RID p_camera, bool p_enable) {
+	Camera *camera = camera_owner.get_or_null(p_camera);
+	ERR_FAIL_NULL(camera);
+	camera->use_custom_aspect = p_enable;
+}
+
+void RendererSceneCull::camera_set_custom_aspect(RID p_camera, float p_aspect) {
+	Camera *camera = camera_owner.get_or_null(p_camera);
+	ERR_FAIL_NULL(camera);
+	camera->custom_aspect = p_aspect;
+}
+
 bool RendererSceneCull::is_camera(RID p_camera) const {
 	return camera_owner.owns(p_camera);
 }
@@ -2694,11 +2706,18 @@ void RendererSceneCull::render_camera(const Ref<RenderSceneBuffers> &p_render_bu
 		bool is_orthogonal = false;
 		bool is_frustum = false;
 
+		float aspect;
+		if (camera->use_custom_aspect) {
+			aspect = camera->custom_aspect;
+		} else {
+			aspect = p_viewport_size.width / (float)p_viewport_size.height;
+		}
+
 		switch (camera->type) {
 			case Camera::ORTHOGONAL: {
 				projection.set_orthogonal(
 						camera->size,
-						p_viewport_size.width / (float)p_viewport_size.height,
+						aspect,
 						camera->znear,
 						camera->zfar,
 						camera->vaspect);
@@ -2707,7 +2726,7 @@ void RendererSceneCull::render_camera(const Ref<RenderSceneBuffers> &p_render_bu
 			case Camera::PERSPECTIVE: {
 				projection.set_perspective(
 						camera->fov,
-						p_viewport_size.width / (float)p_viewport_size.height,
+						aspect,
 						camera->znear,
 						camera->zfar,
 						camera->vaspect);
@@ -2716,7 +2735,7 @@ void RendererSceneCull::render_camera(const Ref<RenderSceneBuffers> &p_render_bu
 			case Camera::FRUSTUM: {
 				projection.set_frustum(
 						camera->size,
-						p_viewport_size.width / (float)p_viewport_size.height,
+						aspect,
 						camera->offset,
 						camera->znear,
 						camera->zfar,
