@@ -298,16 +298,23 @@ Transform3D Camera3D::get_camera_transform() const {
 Projection Camera3D::_get_camera_projection(real_t p_near) const {
 	Size2 viewport_size = get_viewport()->get_visible_rect().size;
 	Projection cm;
+		
+	real_t aspect;
+	if (use_custom_aspect_ratio) {
+		aspect = custom_aspect_ratio.aspect();
+	} else {
+		aspect = viewport_size.aspect();
+	}
 
 	switch (mode) {
 		case PROJECTION_PERSPECTIVE: {
-			cm.set_perspective(fov, viewport_size.aspect(), p_near, _far, keep_aspect == KEEP_WIDTH);
+			cm.set_perspective(fov, aspect, p_near, _far, keep_aspect == KEEP_WIDTH);
 		} break;
 		case PROJECTION_ORTHOGONAL: {
-			cm.set_orthogonal(size, viewport_size.aspect(), p_near, _far, keep_aspect == KEEP_WIDTH);
+			cm.set_orthogonal(size, aspect, p_near, _far, keep_aspect == KEEP_WIDTH);
 		} break;
 		case PROJECTION_FRUSTUM: {
-			cm.set_frustum(size, viewport_size.aspect(), frustum_offset, p_near, _far);
+			cm.set_frustum(size, aspect, frustum_offset, p_near, _far);
 		} break;
 	}
 
@@ -447,17 +454,25 @@ Vector3 Camera3D::project_ray_origin(const Point2 &p_pos) const {
 	ERR_FAIL_COND_V_MSG(!is_inside_tree(), Vector3(), "Camera is not inside scene.");
 
 	Size2 viewport_size = get_viewport()->get_camera_rect_size();
+
 	Vector2 cpos = get_viewport()->get_camera_coords(p_pos);
 	ERR_FAIL_COND_V(viewport_size.y == 0, Vector3());
 
 	if (mode == PROJECTION_ORTHOGONAL) {
 		Vector2 pos = cpos / viewport_size;
 		real_t vsize, hsize;
+		real_t aspect;
+		if (use_custom_aspect_ratio) {
+			aspect = custom_aspect_ratio.aspect();
+		} else {
+			aspect = viewport_size.aspect();
+		}
+
 		if (keep_aspect == KEEP_WIDTH) {
-			vsize = size / viewport_size.aspect();
+			vsize = size / aspect;
 			hsize = size;
 		} else {
-			hsize = size * viewport_size.aspect();
+			hsize = size * aspect;
 			vsize = size;
 		}
 
@@ -692,6 +707,11 @@ void Camera3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_camera_rid"), &Camera3D::get_camera);
 	ClassDB::bind_method(D_METHOD("get_pyramid_shape_rid"), &Camera3D::get_pyramid_shape_rid);
 
+	ClassDB::bind_method(D_METHOD("set_use_custom_aspect", "enable"), &Camera3D::set_use_custom_aspect);
+	ClassDB::bind_method(D_METHOD("get_use_custom_aspect"), &Camera3D::get_use_custom_aspect);
+	ClassDB::bind_method(D_METHOD("set_custom_aspect", "custom_aspect_ratio"), &Camera3D::set_custom_aspect);
+	ClassDB::bind_method(D_METHOD("get_custom_aspect"), &Camera3D::get_custom_aspect);
+
 	ClassDB::bind_method(D_METHOD("set_cull_mask_value", "layer_number", "value"), &Camera3D::set_cull_mask_value);
 	ClassDB::bind_method(D_METHOD("get_cull_mask_value", "layer_number"), &Camera3D::get_cull_mask_value);
 
@@ -706,6 +726,8 @@ void Camera3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "v_offset", PROPERTY_HINT_NONE, "suffix:m"), "set_v_offset", "get_v_offset");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "doppler_tracking", PROPERTY_HINT_ENUM, "Disabled,Idle,Physics"), "set_doppler_tracking", "get_doppler_tracking");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "projection", PROPERTY_HINT_ENUM, "Perspective,Orthogonal,Frustum"), "set_projection", "get_projection");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use custom aspect"), "set_use_custom_aspect", "get_use_custom_aspect");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "custom aspect"), "set_custom_aspect", "get_custom_aspect");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "current"), "set_current", "is_current");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fov", PROPERTY_HINT_RANGE, "1,179,0.1,degrees"), "set_fov", "get_fov");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "size", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater,suffix:m"), "set_size", "get_size");
@@ -851,6 +873,27 @@ Vector3 Camera3D::get_doppler_tracked_velocity() const {
 	} else {
 		return Vector3();
 	}
+}
+
+void Camera3D::set_use_custom_aspect(bool p_enable) {
+	use_custom_aspect_ratio = p_enable;
+	// TODO: Update CameraRenderer
+	RenderingServer::get_singleton()->camera_set_use_custom_aspect(camera, use_custom_aspect_ratio);
+	notify_property_list_changed();
+}
+
+bool Camera3D::get_use_custom_aspect() const {
+	return use_custom_aspect_ratio;
+}
+
+void Camera3D::set_custom_aspect(Vector2 p_custom_aspect_ratio) {
+	custom_aspect_ratio = p_custom_aspect_ratio;
+	// TODO: Update CameraRenderer
+	RenderingServer::get_singleton()->camera_set_custom_aspect(camera, p_custom_aspect_ratio.aspect());
+}
+
+Vector2 Camera3D::get_custom_aspect() const {
+	return custom_aspect_ratio;
 }
 
 RID Camera3D::get_pyramid_shape_rid() {
